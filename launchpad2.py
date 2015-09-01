@@ -3,15 +3,16 @@ import pygame.midi
 import sys
 
 class LightMode:
-    ON    = 0
-    BLINK = 1
-    FADE  = 2
-    OFF   = 3
+    ON     = 0
+    BLINK  = 1
+    PULSE  = 2
+    OFF    = 3
 
 class LightColor:
     BLUE      = 41
     DARK_BLUE = 50
     GREEN     = 18
+    GREY      =  2
     MAGENTA   = 53
     ORANGE    =  9
     PURPLE    = 54
@@ -116,6 +117,10 @@ class Launchpad():
         for i in range(3): # Turn all mode off
             self.out_.note_off(led, channel=i)
 
+    def all_off(self):
+        for i in range(11, 90):
+            self.led_off(i)
+
 
 if __name__ == "__main__":
     init()
@@ -135,4 +140,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     print "Bye!"
+    l.all_off()
     quit()
