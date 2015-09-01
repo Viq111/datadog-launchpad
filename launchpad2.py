@@ -6,16 +6,18 @@ class LightMode:
     ON    = 0
     BLINK = 1
     FADE  = 2
+    OFF   = 3
 
 class LightColor:
-    BLUE =    41
-    GREEN =   18
-    MAGENTA = 53
-    ORANGE =   9
-    PURPLE =  54
-    RED =      5
-    WHITE =    3
-    YELLOW =  13
+    BLUE      = 41
+    DARK_BLUE = 50
+    GREEN     = 18
+    MAGENTA   = 53
+    ORANGE    =  9
+    PURPLE    = 54
+    RED       =  5
+    WHITE     =  3
+    YELLOW    = 13
 
 # Internal functions
 
@@ -75,19 +77,40 @@ class Launchpad():
 
         self.in_ = pygame.midi.Input(device_in.id)
         self.out_ = pygame.midi.Output(device_out.id)
+        self.buffer = []
 
-    def wait_input(self):
+    def wait_input(self, timeout=None):
         "Block until the user press a button"
+        total_time = 0
         while True:
             if self.in_.poll():
-                result = self.in_.read(1)[0][0]
-                # Check if we click a button and not release it
-                if result[2] == 127:
-                    return result[1]
+                result = self.in_.read(100)
+                for r in result:
+                    if r[0][2] == 127: # Check if we click a button and not release it
+                        self.buffer.append(r[0][1])
+
+            if len(self.buffer) > 0:
+                return self.buffer.pop(0)
+
             pygame.time.wait(10) # wait 10ms
+            total_time += 0.010
+            if timeout is not None and total_time >= timeout:
+                return None # Timeout exceeded
+
+    def get_all_inputs(self):
+        "Return a list of all inputs since last queried"
+        inputs = []
+        last = self.wait_input(0) # No wait
+        while last:
+            inputs.append(last)
+            last = self.wait_input(0)
+        return inputs
 
     def led_on(self, led, color=LightColor.BLUE, mode=LightMode.ON):
-        self.out_.note_on(led, velocity=color, channel=mode)
+        if mode == LightMode.OFF:
+            self.led_off(led)
+        else:
+            self.out_.note_on(led, velocity=color, channel=mode)
 
     def led_off(self, led):
         for i in range(3): # Turn all mode off
