@@ -9,7 +9,7 @@ if __name__ == "__main__":
     l = launchpad.Launchpad()
     controller = MainController(l)
 
-    datadog_ops = OpsMode()
+    datadog_ops = OpsMode("datadog.conf")
     # Load ops.conf
     with open("ops.conf", "r") as f:
         monit = json.loads(f.read())

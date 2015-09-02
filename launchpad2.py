@@ -11,8 +11,8 @@ class LightMode:
 class LightColor:
     BLUE      = 41
     DARK_BLUE = 50
-    GREEN     = 18
-    GREY      =  2
+    GREEN     = 64
+    GREY      = 71
     MAGENTA   = 53
     ORANGE    =  9
     PURPLE    = 54
@@ -126,6 +126,22 @@ if __name__ == "__main__":
     init()
     print "^C to quit..."
     l = Launchpad()
+    # All on for 5 secs
+    for diz in range(1,9):
+        for unit in range(1, 9):
+            button = diz*10+unit
+            color = (diz-1)*8+(unit-1)
+            l.led_on(button, color)
+    raw_input("Press return to go to second palette...")
+    l.all_off()
+    # Second palette
+    for diz in range(1,9):
+        for unit in range(1, 9):
+            button = diz*10+unit
+            color = (diz-1)*8+(unit-1) + 64
+            l.led_on(button, color)
+    raw_input("Press return to go to free style...")
+    l.all_off()
     leds_on = []
     try:
         while True:

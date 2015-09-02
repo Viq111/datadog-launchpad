@@ -2,7 +2,7 @@ import json
 import time
 import webbrowser
 
-from datadog import initialize, api
+from fast_monitor import FastMonitor
 from launchpad2 import LightColor, LightMode
 from launchpad_interface import ModeController
 
@@ -21,7 +21,7 @@ STATUS_TO_LIGHT = {
 }
 
 class OpsMode(ModeController):
-    def __init__(self, colunms_per_category=8):
+    def __init__(self, datadog_conf_path, colunms_per_category=8):
         "Set up a ops mode to datadog"
         if colunms_per_category not in [1 ,2, 4, 8]:
             raise RuntimeError("colunms_per_category must be 1, 2, 4 or 8")
@@ -30,9 +30,9 @@ class OpsMode(ModeController):
         self.button_id = {} # Assign a button <-> monitor_id
 
         # Initialize datadog
-        with open("datadog.conf", "r") as f:
+        with open(datadog_conf_path, "r") as f:
             conf = json.loads(f.read())
-        initialize(api_key=conf['api_key'], app_key=conf['app_key'])
+        self.datadog = FastMonitor(**conf)
 
         ModeController.__init__(self)
 
@@ -94,10 +94,19 @@ class OpsMode(ModeController):
     def get_status(self):
         "Get monitor status"
         result = []
-        print "Querying datadog..."
-        for button, monitor_id in self.button_id.iteritems():
-            status = api.Monitor.get(monitor_id)
-            col_mode = self._status_to_light(status.get('overall_state'))
-            result.append((button, col_mode))
-        print "Finished querying datadog"
+
+        # Time datadog query
+        start = time.time()
+        monitors = self.datadog.query_all()
+        stop = int((time.time()-start)*1000)
+        print "Took {}ms to query datadog".format(stop)
+        reverse_dict = {v: k for k,v in self.button_id.iteritems()}
+
+        for monitor in monitors:
+            id_ = monitor["id"]
+            if id_ in reverse_dict:
+                button = reverse_dict[id_]
+                color_mode = self._status_to_light(monitor.get('overall_state'))
+                result.append((button, color_mode))
+
         return result
