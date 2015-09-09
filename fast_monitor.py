@@ -1,27 +1,34 @@
-# This class is dumped-down version of datadogpy which only query the monitor
-# endpoint
+import datadog
+import requests
 
-import json
-import urllib
-import urllib2
 
 class FastMonitor():
-    def __init__(self, api_key=None, app_key=None, api_host=None):
+    "Query datadog API either directly via the API or via http"
+    def __init__(self, api_key=None, app_key=None, api_host=None, datadog_lib=True):
         self.api_key = api_key
         self.app_key = app_key
+        self.dd = datadog_lib
         if api_host:
             self.api_host = api_host
         else:
             self.api_host = "https://app.datadoghq.com"
+        if self.dd:
+            datadog.initialize(api_host=api_host, api_key=api_key, app_key=app_key)
 
     def query_all(self):
         "Return a list of all monitor objects"
-        url = self.api_host + "/api/v1/monitor"
-        url += "?api_key={0}&application_key={1}".format(self.api_key, self.app_key)
-        rep = urllib2.urlopen(url)
-        return json.loads(rep.read())
+        if self.dd:
+            return datadog.api.Monitor.get_all()
+        else:
+            url = self.api_host + "/api/v1/monitor"
+            print "Querying {} ...".format(url)
+            payload = {"api_key": self.api_key, "application_key": self.app_key}
+            r = requests.get(url, params=payload)
+            return r.json()
 
 if __name__ == "__main__":
+    import json
+
     with open("datadog.conf", "r") as f:
         creds = f.read()
 
